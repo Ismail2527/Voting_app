@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voting App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin: 20px;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input {
+            margin: 5px 0;
+            padding: 10px;
+            width: 200px;
+        }
+        button {
+            padding: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Voting Application</h1>
+
+        <!-- Signup Form -->
+        <h2>Signup</h2>
+        <form id="signupForm">
+            <input type="text" id="signupName" placeholder="Name" required />
+            <input type="number" id="signupAge" placeholder="Age" required />
+            <input type="email" id="signupEmail" placeholder="Email" required />
+            <input type="text" id="signupMobile" placeholder="Mobile" required />
+            <input type="text" id="signupAddress" placeholder="Address" required />
+            <input type="number" id="signupAadhar" placeholder="Aadhar Number" required />
+            <input type="password" id="signupPassword" placeholder="Password" required />
+            <button type="submit">Sign Up</button>
+        </form>
+
+        <!-- Login Form -->
+        <h2>Login</h2>
+        <form id="loginForm">
+            <input type="number" id="loginAadhar" placeholder="Aadhar Number" required />
+            <input type="password" id="loginPassword" placeholder="Password" required />
+            <button type="submit">Login</button>
+        </form>
+
+        <!-- View Candidates -->
+        <h2>Candidates</h2>
+        <button id="viewCandidatesBtn">View Candidates</button>
+        <div id="candidatesList"></div>
+
+        <!-- Voting -->
+        <h2>Vote</h2>
+        <input type="number" id="voteCandidateId" placeholder="Candidate ID" required />
+        <button id="voteBtn">Vote</button>
+
+        <div id="voteMessage"></div>
+    </div>
+
+    <script>
+        const apiUrl = 'http://localhost:3000'; // Replace with your actual API URL
+        let token = '';
+
+        // Signup Form Submission
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('signupName').value,
+                age: document.getElementById('signupAge').value,
+                email: document.getElementById('signupEmail').value,
+                mobile: document.getElementById('signupMobile').value,
+                address: document.getElementById('signupAddress').value,
+                aadharCardNumber: document.getElementById('signupAadhar').value,
+                password: document.getElementById('signupPassword').value
+            };
+
+            try {
+                const response = await fetch(`${apiUrl}/user/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                console.log(result);
+                alert('Signup successful! Token: ' + result.token);
+            } catch (err) {
+                console.error('Error during signup:', err);
+            }
+        });
+
+        // Login Form Submission
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                aadharCardNumber: document.getElementById('loginAadhar').value,
+                password: document.getElementById('loginPassword').value
+            };
+
+            try {
+                const response = await fetch(`${apiUrl}/user/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                console.log(result);
+                token = result.token; // Store token for future requests
+                alert('Login successful! Token: ' + token);
+            } catch (err) {
+                console.error('Error during login:', err);
+            }
+        });
+
+        // View Candidates
+        document.getElementById('viewCandidatesBtn').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${apiUrl}/candidate`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` // Include token for authenticated requests
+                    }
+                });
+                const candidates = await response.json();
+                const candidatesList = document.getElementById('candidatesList');
+                candidatesList.innerHTML = '';
+                candidates.forEach(candidate => {
+                    candidatesList.innerHTML += `<p>${candidate.name} (${candidate.party}) - Votes: ${candidate.votes.length}</p>`;
+                });
+            } catch (err) {
+                console.error('Error fetching candidates:', err);
+            }
+        });
+
+        // Vote for a Candidate
+        document.getElementById('voteBtn').addEventListener('click', async () => {
+            const candidateID = document.getElementById('voteCandidateId').value;
+            try {
+                const response = await fetch(`${apiUrl}/candidate/vote/${candidateID}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` // Include token for authenticated requests
+                    }
+                });
+                const result = await response.json();
+                document.getElementById('voteMessage').innerText = result.message || 'Vote cast successfully!';
+            } catch (err) {
+                console.error('Error during voting:', err);
+                document.getElementById('voteMessage').innerText = 'Error casting vote.';
+            }
+        });
+    </script>
+</body>
+</html>
